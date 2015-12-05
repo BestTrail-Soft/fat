@@ -37,6 +37,7 @@ public class OptionsActivity extends AppCompatActivity {
 
     public void onStartButtonToMapClick(View view) {
         Intent intent = new Intent(this, MapsActivity.class);
+        intent.putExtra("places", places);
         startActivity(intent);
     }
 
