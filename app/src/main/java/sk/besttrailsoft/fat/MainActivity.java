@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import sk.besttrailsoft.fat.program.ProgramsActivity;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -57,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onProgramsButtonClick(View view){
-        Intent intent = new Intent(this, ProgramActivity.class);
+        Intent intent = new Intent(this, ProgramsActivity.class);
         startActivity(intent);
     }
 }

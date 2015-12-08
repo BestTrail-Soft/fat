@@ -69,7 +69,7 @@
                 android:value="sk.besttrailsoft.fat.OptionsActivity" />
         </activity>
         <activity
-            android:name=".ProgramActivity"
+            android:name=".program.ProgramsActivity"
             android:label="@string/title_activity_program"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar" >
@@ -78,13 +78,13 @@
                 android:value="sk.besttrailsoft.fat.MainActivity" />
         </activity>
         <activity
-            android:name=".CreateProgramActivity"
+            android:name=".program.CreateProgramActivity"
             android:label="@string/title_activity_create_program"
-            android:parentActivityName=".ProgramActivity"
+            android:parentActivityName=".program.ProgramsActivity"
             android:theme="@style/AppTheme.NoActionBar" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="sk.besttrailsoft.fat.ProgramActivity" />
+                android:value=".program.ProgramsActivity" />
         </activity>
     </application>
 

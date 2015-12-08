@@ -48,4 +48,10 @@ public class ProgramManager {
         }
         fileHelper.writeToFile(name,content, DIRECTORY);
     }
+
+    public void deleteProgram(String programName){
+        fileHelper.deleteFile(programName, DIRECTORY);
+
+    }
+
 }

@@ -67,5 +67,20 @@ public class FileHelper {
 
     }
 
+    public void deleteFile(String filename, String directoryName){
+        if (filename == null || filename.isEmpty())
+            throw new IllegalArgumentException("filename cannot be null");
+
+        if (directoryName == null || directoryName.isEmpty())
+            throw new IllegalArgumentException("directory cannot be null");
+
+        File directory = context.getDir(directoryName, Context.MODE_PRIVATE);
+        File file = new File(directory, filename);
+        file.delete();
+
+    }
+
+
+
 
 }
