@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.StrictMode;
@@ -26,31 +27,42 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import sk.besttrailsoft.fat.mock.MovingObjectMock;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap map;
     private ArrayList<LatLng> waypoints = new ArrayList<>();
+    private ArrayList<LatLng> pathPassed = new ArrayList<>();
     private ArrayList<String> waypointsNames;
     private int nextPointStep = 1;
     private LocationManager locationManager;
     private ArrayList<Marker> markers = new ArrayList<>();
+
+    //MOCK
+    MovingObjectMock movingMock = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
-        //remove when dont need mockup
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        mockLocation();
         waypointsNames = getIntent().getStringArrayListExtra("places");
+        //MOCK
+        movingMock = new MovingObjectMock(locationManager,
+                getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
         if (waypointsNames == null || waypointsNames.size() < 2) {
-            LatLng curLocation = null;
-            curLocation = getCurrentLocation();
+
+            LatLng curLocation = getCurrentLocation();
             if (curLocation != null)
                 waypoints.add(getCurrentLocation());
+            if(waypoints != null && waypoints.size() == 1) {
+                waypoints.add(waypoints.get(0));
+            }
         } else {
             LatLng place = null;
             for (String point : waypointsNames) {
@@ -75,9 +87,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (waypoints == null || waypoints.size() < 1)
             return;
         if (waypoints.size() > 1) {
-            PolylineOptions polylineOptions = new PolylineOptions().addAll(getRoutePointsFromWaypoints())
+            List<LatLng> way = getRoutePointsFromWaypoints();
+            PolylineOptions polylineOptions = new PolylineOptions().addAll(way)
                     .width(5).color(Color.BLUE).geodesic(true);
             map.addPolyline(polylineOptions);
+            //MOCK
+            movingMock.setItinerary(way);
         }
         map.setMyLocationEnabled(true);
         LatLng position = getCurrentLocation();
@@ -87,11 +102,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             setCamera(position);
         }
         updateMarkers();
+
+        //MOCK
+        movingMock.startTimer(5000);
     }
 
     private LatLng getCurrentLocation() {
+        if(pathPassed.size() > 0) {
+            return pathPassed.get(pathPassed.size() - 1);
+        }
         List<String> providers = locationManager.getAllProviders();
         Location location = null;
+        String bestProvider = null;
         for (String provider : providers) {
             Location l = null;
             try {
@@ -103,9 +125,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (location == null || l.getAccuracy() < location.getAccuracy()) {
                 // Found best last known location: %s", l);
                 location = l;
+                bestProvider = provider;
             }
         }
-        return (location == null ? null : new LatLng(location.getLatitude(), location.getLongitude()));
+        if(location == null) {
+            return null;
+        } else {
+            LatLng newPoint = new LatLng(location.getLatitude(), location.getLongitude());
+            pathPassed.add(newPoint);
+            LocationListener locationListener =  new LocationListener() {
+                public void onLocationChanged(Location location) {
+                    onLocationChangedEvent(location);
+                }
+
+                public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+                public void onProviderEnabled(String provider) {}
+
+                public void onProviderDisabled(String provider) {}
+            };
+            try {
+                locationManager.requestLocationUpdates(bestProvider, 0, 0, locationListener);
+            } catch (SecurityException ex) {
+                Log.w("ReguestLocationUpdates ", ex);
+            }
+            return newPoint;
+        }
     }
 
     private void setCamera(LatLng target) {
@@ -167,13 +212,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             markers.add(map.addMarker(new MarkerOptions()
                     .position(waypoints.get(nextPointStep)).title("Next")));
         }
-
-        LatLng myMarker = getCurrentLocation();
-        if(myMarker != null) {
-            markers.add(map.addMarker(new MarkerOptions()
-                    .position(myMarker).title("Me")
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))));
-        }
     }
 
     private LatLng getLocationFromAddress(String strAddress){
@@ -201,49 +239,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return p1;
     }
 
-    private void setMockLocation(double latitude, double longitude, float accuracy) {
-        locationManager.addTestProvider(LocationManager.GPS_PROVIDER,
-                "requiresNetwork" == "",
-                "requiresSatellite" == "",
-                "requiresCell" == "",
-                "hasMonetaryCost" == "",
-                "supportsAltitude" == "",
-                "supportsSpeed" == "",
-                "supportsBearing" == "",
-                android.location.Criteria.POWER_LOW,
-                android.location.Criteria.ACCURACY_FINE);
-
-        Location newLocation = new Location(LocationManager.GPS_PROVIDER);
-
-        newLocation.setLatitude(latitude);
-        newLocation.setLongitude(longitude);
-        newLocation.setAccuracy(accuracy);
-        long time = System.currentTimeMillis();
-        newLocation.setTime(time);
-        try {
-            Method locationJellyBeanFixMethod = Location.class.getMethod("makeComplete");
-            if (locationJellyBeanFixMethod != null) {
-                locationJellyBeanFixMethod.invoke(newLocation);
-            }
-        }catch (NoSuchMethodException ex) {
-            Log.w("No makeComplete method",ex);
-        }catch(InvocationTargetException ex) {
-            Log.w("Exception during invocation of makeComplete", ex);
-        }catch(IllegalAccessException ex) {
-            Log.w("Exception during invocation of makeComplete", ex);
+    private void onLocationChangedEvent(Location location) {
+        pathPassed.add(new LatLng(location.getLatitude(), location.getLongitude()));
+        int size = pathPassed.size();
+        if(size > 1) {
+            map.addPolyline(new PolylineOptions()
+                    .addAll(Arrays.asList(pathPassed.get(size - 2), pathPassed.get(size - 1)))
+                    .width(5).color(Color.GREEN).geodesic(true));
         }
-        locationManager.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true);
-
-        locationManager.setTestProviderStatus(LocationManager.GPS_PROVIDER,
-                LocationProvider.AVAILABLE,
-                null, time);
-
-        locationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, newLocation);
-
-    }
-
-    private void mockLocation() {
-        LatLng suradnice = getLocationFromAddress("Sadová 385, 058 01 Gánovce, Slovensko");
-        setMockLocation(suradnice.latitude, suradnice.longitude, 1.0f);
+        updateMarkers();
     }
 }
