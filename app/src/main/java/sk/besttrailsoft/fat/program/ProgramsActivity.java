@@ -95,6 +95,7 @@ public class ProgramsActivity extends AppCompatActivity {
 
         switch (item.getItemId()){
             case DELETE_MENU_ITEM:
+                Toast.makeText(getApplicationContext(), names.get(info.position) + " deleted", Toast.LENGTH_SHORT).show();
                 programManager.deleteProgram(names.get(info.position));
                 updateProgramsNames();
 
@@ -117,7 +118,7 @@ public class ProgramsActivity extends AppCompatActivity {
 
 
         ((ArrayAdapter)listView.getAdapter()).notifyDataSetChanged();
-        Toast.makeText(getApplicationContext(), "DELETE", Toast.LENGTH_SHORT).show();
+
     }
 
 
