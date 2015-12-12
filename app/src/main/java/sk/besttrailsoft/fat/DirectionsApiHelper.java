@@ -1,5 +1,7 @@
 package sk.besttrailsoft.fat;
 
+import android.location.Location;
+
 import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONArray;
@@ -51,6 +53,29 @@ public class DirectionsApiHelper {
         }
 
         return route;
+    }
+
+    public static float distance(LatLng point1, LatLng point2) {
+        Location first = new Location("first");
+        first.setLatitude(point1.latitude);
+        first.setLongitude(point1.longitude);
+
+        Location second = new Location("second");
+        second.setLatitude(point2.latitude);
+        second.setLongitude(point2.longitude);
+
+        return first.distanceTo(second);
+    }
+
+    public static float distance(List<LatLng> points) {
+        if(points == null || points.size() < 2)
+            return 0;
+        float totalDistance = 0;
+
+        for (int i = 0; i<points.size()-1; i++) {
+            totalDistance += distance(points.get(i), points.get(i+1));
+        }
+        return totalDistance;
     }
 
     private static String buildUrl(List<LatLng> points) {

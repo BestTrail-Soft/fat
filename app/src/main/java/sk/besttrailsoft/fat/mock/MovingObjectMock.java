@@ -22,6 +22,7 @@ public class MovingObjectMock {
     private int index = 0;
     private static String locationProvider = LocationManager.GPS_PROVIDER;
     private Timer timer;
+    private TimerTask task;
     private LocationManager locationManager;
 
     public MovingObjectMock(LocationManager locationManager, LatLng firstPosition) {
@@ -86,8 +87,16 @@ public class MovingObjectMock {
             return false;
 
         timer = new Timer();
-        timer.schedule(createTask(), period, period);
+        task = createTask();
+        timer.schedule(task, period, period);
         return true;
+    }
+
+    public void stop(){
+        if(task != null)
+            task.cancel();
+        if(timer != null)
+            timer.cancel();
     }
 
     private TimerTask createTask(){
