@@ -2,34 +2,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
-<LinearLayout
-    android:layout_height="wrap_content"
-    android:layout_width="wrap_content"
-    android:layout_gravity="center_horizontal"
-    android:weightSum="1"
-    android:layout_marginRight="10dp"
-    android:layout_marginLeft="10dp">
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Text:"
-        android:id="@+id/textView4"
-        android:layout_marginRight="5dp" />
 
     <EditText
-        android:layout_width="312dp"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:id="@+id/newStepeditText"
         android:ellipsize="end"
         android:layout_marginLeft="10dp"
-        android:layout_marginRight="5dp" />
-</LinearLayout>
+        android:layout_marginRight="10dp"
+        android:hint="Enter instructions..."
+        android:layout_marginTop="20dp" />
 
     <LinearLayout
         android:layout_height="wrap_content"
         android:layout_width="373dp"
-        android:layout_gravity="center_horizontal"
         android:weightSum="1"
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp">
@@ -40,15 +26,24 @@
             android:layout_height="wrap_content"
             android:id="@+id/duration_spinner"
             android:spinnerMode="dialog"
-            android:layout_weight="0.1"
-            android:layout_marginLeft="10dp" />
+            android:layout_marginLeft="10dp"
+            />
 
         <EditText
         android:layout_width="47dp"
         android:layout_height="wrap_content"
         android:inputType="number"
         android:ems="10"
-        android:id="@+id/editText2" />
+        android:id="@+id/durationEditTextView"
+            android:text="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:text="meter(s)"
+            android:id="@+id/durationUnitsTextView"
+            />
 
     </LinearLayout>
 

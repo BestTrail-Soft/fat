@@ -8,7 +8,7 @@ import org.json.JSONObject;
  */
 public class ProgramStep {
     private String text;
-    private Long distance;
+    private Integer distance;
     private Integer time;
 
     public String getText() {
@@ -19,11 +19,11 @@ public class ProgramStep {
         this.text = text;
     }
 
-    public Long getDistance() {
+    public Integer getDistance() {
         return distance;
     }
 
-    public void setDistance(Long distance) {
+    public void setDistance(Integer distance) {
         this.distance = distance;
     }
 
@@ -35,10 +35,11 @@ public class ProgramStep {
         this.time = time;
     }
 
-    public String toJson(){
+    public JSONObject toJson(){
 
         JSONObject jsonObject= new JSONObject();
         try {
+
             jsonObject.put("text", getText());
 
             if (distance != null)
@@ -47,11 +48,11 @@ public class ProgramStep {
             if (time != null)
                 jsonObject.put("time", getTime());
 
-            return jsonObject.toString();
+            return jsonObject;
         } catch (JSONException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-            return "";
+            return new JSONObject();
         }
 
     }

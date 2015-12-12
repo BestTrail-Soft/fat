@@ -14,6 +14,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import org.json.JSONException;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -36,7 +39,7 @@ public class ProgramsActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         programManager = new ProgramManager(this.getApplicationContext());
@@ -46,28 +49,21 @@ public class ProgramsActivity extends AppCompatActivity {
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, names);
             listView.setAdapter(adapter);
             listView.setEmptyView(findViewById(R.id.emptyElement));
-           /* listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+           listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapter, View v, int position,
                                         long arg3) {
-                    String value = (String) adapter.getItemAtPosition(position);
-                    new AlertDialog.Builder(v.getContext())
-                            .setTitle("Delete entry")
-                            .setMessage("Are you sure you want to delete this entry?")
-                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    // continue with delete
-                                }
-                            })
-                            .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    // do nothing
-                                }
-                            })
-                            .setIcon(android.R.drawable.ic_dialog_alert)
-                            .show();
+                    String name = (String) adapter.getItemAtPosition(position);
+                    Program program;
+
+
+                        Intent intent = new Intent(getApplicationContext(), ShowProgramActivity.class);
+                        intent.putExtra("name", name);
+                        startActivity(intent);
+
+
                 }
-            });*/
+            });
 
         listView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override

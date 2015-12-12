@@ -6,4 +6,5 @@
     <string name="title_activity_maps">Map</string>
     <string name="title_activity_autocomplete_place">AutocompletePlaceActivity</string>
     <string name="title_activity_create_program">Create Program</string>
+    <string name="title_activity_show_program">ShowProgramActivity</string>
 </resources>

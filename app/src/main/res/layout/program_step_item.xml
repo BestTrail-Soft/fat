@@ -30,6 +30,6 @@
             android:layout_height="wrap_content"
             android:text="New Text"
             android:layout_weight="0.1"
-            android:id="@+id/stepDuration" />
+            android:id="@+id/stepDurationTextView" />
     </LinearLayout>
 </LinearLayout>

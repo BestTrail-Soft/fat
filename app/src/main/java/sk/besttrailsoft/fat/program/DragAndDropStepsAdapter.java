@@ -3,13 +3,18 @@ package sk.besttrailsoft.fat.program;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.Context;
+import android.util.Log;
+import android.view.ContextMenu;
 import android.view.DragEvent;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -23,6 +28,7 @@ import sk.besttrailsoft.fat.program.ProgramStep;
  */
 public class DragAndDropStepsAdapter extends BaseAdapter {
     private ArrayList<ProgramStep> data;
+    private IContextMenuable activity;
 
     private static int offset;
 
@@ -35,6 +41,7 @@ public class DragAndDropStepsAdapter extends BaseAdapter {
         if (activity == null)
             throw new InvalidParameterException("activity cannot be null");
 
+        this.activity = (IContextMenuable)activity;
         this.data = data;
         inflater = (LayoutInflater)activity.getSystemService
                 (Context.LAYOUT_INFLATER_SERVICE);
@@ -67,6 +74,7 @@ public class DragAndDropStepsAdapter extends BaseAdapter {
             holder = new ViewHolder();
             holder.text = (TextView) view.findViewById(R.id.stepText);
             holder.position = (TextView) view.findViewById(R.id.stepPosition);
+            holder.stepDuration = (TextView) view.findViewById(R.id.stepDurationTextView);
 
             view.setTag(holder);
         }
@@ -82,12 +90,37 @@ public class DragAndDropStepsAdapter extends BaseAdapter {
 
             holder.text.setText(step.getText());
             holder.position.setText((position+1) + ".");
+
+            if (step.getDistance() != null){
+                holder.stepDuration.setText(step.getDistance() + " meter(s)");
+            }
+            else{
+                holder.stepDuration.setText(step.getTime() + " minute(s)");
+            }
         }
 
 
         view.setId(position);
         view.setOnDragListener(new StepDragListener());
-        view.setOnTouchListener(new StepOnTouchListener());
+        //view.setOnTouchListener(new StepOnTouchListener());
+        view.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                ClipData dragData = ClipData.newPlainText(String.valueOf(view.getId()), "data");
+                View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(view);
+                view.startDrag(dragData, shadowBuilder, view , 0);
+                return true;
+            }
+        });
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                activity.openListViewMenu(v);
+            }
+        });
+
+
+
         return view;
     }
 
@@ -96,6 +129,7 @@ public class DragAndDropStepsAdapter extends BaseAdapter {
     public static class ViewHolder{
         TextView text;
         TextView position;
+        TextView stepDuration;
 
     }
 
@@ -119,24 +153,30 @@ public class DragAndDropStepsAdapter extends BaseAdapter {
 
                     return true;
                 case DragEvent.ACTION_DRAG_ENTERED:
-                    Integer startingId = Integer.valueOf(event.getClipDescription().getLabel().toString());
-                    if (startingId == null){
+                    Integer startingPosition = Integer.valueOf(event.getClipDescription().getLabel().toString());
+                    int currentPosition = view.getId();
+                    if (startingPosition == null){
                         System.err.println("Dragged object has invalid id");
                         return false;
                     }
 
 
-                    int currentId = view.getId();
 
-                    if (currentId == startingId.intValue() + offset)
-                        return true;
 
-                    System.err.println("s: " + startingId + " c: " + currentId + " o: " + offset);
+                    if (currentPosition == startingPosition.intValue() + offset)
+                        return false;
 
-                    Collections.swap(data, view.getId(), startingId.intValue() + offset);
-                    offset = Math.abs(currentId - startingId.intValue());
+
+
+                    Collections.swap(data, currentPosition, startingPosition.intValue() + offset);
+
+                    // offset calculation
+
+                        offset = currentPosition - startingPosition.intValue();
+
                     notifyDataSetChanged();
-                    return true;
+                    System.err.println("s: " + startingPosition + " c: " + currentPosition + " o: " + offset);
+                    return false;
 
                 case DragEvent.ACTION_DRAG_ENDED:
                     offset = 0;
@@ -147,17 +187,6 @@ public class DragAndDropStepsAdapter extends BaseAdapter {
         }
     }
 
-    protected class StepOnTouchListener implements View.OnTouchListener {
 
 
-        @Override
-        public boolean onTouch(View view, MotionEvent event) {
-            if (event.getAction() == MotionEvent.ACTION_DOWN){
-                ClipData dragData = ClipData.newPlainText(String.valueOf(view.getId()), "data");
-                View.DragShadowBuilder shadowBuilder = new View.DragShadowBuilder(view);
-                view.startDrag(dragData, shadowBuilder, view , 0);
-            }
-            return false;
-        }
-    }
 }

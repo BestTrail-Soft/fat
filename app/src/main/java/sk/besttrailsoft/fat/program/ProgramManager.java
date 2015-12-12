@@ -4,11 +4,13 @@ import android.content.Context;
 
 import com.google.android.gms.games.internal.api.NotificationsImpl;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 
@@ -49,9 +51,44 @@ public class ProgramManager {
         fileHelper.writeToFile(name,content, DIRECTORY);
     }
 
+    public Program getProgram(String name) throws IOException, JSONException {
+        if (name == null || name == ""){
+            throw new InvalidParameterException("name is null or empty");
+        }
+        Program program = new Program();
+        String json = fileHelper.getFileContent(name, DIRECTORY);
+        JSONObject jsonObject = new JSONObject(json);
+       program.setName(jsonObject.getString("name"));
+        program.setSteps(convertJsonArrayToStepsArray(jsonObject.getJSONArray("steps")));
+        System.err.println(json);
+        return program;
+
+    }
+
     public void deleteProgram(String programName){
         fileHelper.deleteFile(programName, DIRECTORY);
 
+    }
+
+    private ArrayList<ProgramStep> convertJsonArrayToStepsArray(JSONArray array) throws JSONException {
+        ArrayList<ProgramStep> result = new ArrayList<>();
+        ProgramStep step;
+        String distance;
+        JSONObject obj;
+        for (int i=0;i<array.length();i++){
+            obj = array.getJSONObject(i);
+            step = new ProgramStep();
+            step.setText(obj.getString("text"));
+
+            if ((distance = obj.getString("distance")) != null){
+                step.setDistance(Integer.parseInt(distance));
+            }
+            else{
+                step.setTime(Integer.parseInt(obj.getString("time")));
+            }
+            result.add(step);
+        }
+        return result;
     }
 
 }

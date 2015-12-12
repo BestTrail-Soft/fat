@@ -1,11 +1,15 @@
 package sk.besttrailsoft.fat;
 
 import android.content.Context;
+import android.provider.MediaStore;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
@@ -65,6 +69,31 @@ public class FileHelper {
             outputStream.close();
 
 
+    }
+
+    public String getFileContent(String filename,String directoryName) throws IOException {
+        if (filename == null || filename.isEmpty())
+            throw new IllegalArgumentException("filename cannot be null");
+
+        if (directoryName == null || directoryName.isEmpty())
+            throw new IllegalArgumentException("directory cannot be null");
+
+        File directory = context.getDir(directoryName, Context.MODE_PRIVATE);
+        File file = new File(directory, filename);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+        StringBuilder sb = new StringBuilder();
+        try{
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+            sb.append(line).append("\n");
+        }
+        }
+        finally {
+            reader.close();
+
+        }
+        return sb.toString();
     }
 
     public void deleteFile(String filename, String directoryName){
