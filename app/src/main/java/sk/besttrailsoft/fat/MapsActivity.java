@@ -12,6 +12,7 @@ import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -42,6 +43,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationManager locationManager;
     private ArrayList<Marker> markers = new ArrayList<>();
 
+    private TextView distancePassedTextView;
+
+    private float passedInMeters = 0;
+
     //MOCK
     MovingObjectMock movingMock = null;
 
@@ -49,20 +54,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        distancePassedTextView = (TextView) findViewById(R.id.passedDistanceValueText);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         waypointsNames = getIntent().getStringArrayListExtra("places");
         //MOCK
-        movingMock = new MovingObjectMock(locationManager,
-                getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
+        movingMock = new MovingObjectMock(locationManager, getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
         if (waypointsNames == null || waypointsNames.size() < 2) {
 
             LatLng curLocation = getCurrentLocation();
-            if (curLocation != null)
-                waypoints.add(getCurrentLocation());
             if(waypoints != null && waypoints.size() == 1) {
                 waypoints.add(waypoints.get(0));
             }
+            if (curLocation != null)
+                waypoints.add(getCurrentLocation());
         } else {
             LatLng place = null;
             for (String point : waypointsNames) {
@@ -153,6 +158,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        movingMock.stop();
+        super.onDestroy();
+    }
+
     private void setCamera(LatLng target) {
         CameraPosition cameraPosition = new CameraPosition.Builder()
                 .target(target)
@@ -166,7 +177,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onMyLocationButtonClick() {
                 LatLng curPos = getCurrentLocation();
-                if(curPos == null)
+                if (curPos == null)
                     return false;
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(curPos)
@@ -204,14 +215,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             markers.add(map.addMarker(new MarkerOptions()
                     .position(waypoints.get(0)).title("Start")));
         }
-        if(waypoints.size() < 2 || nextPointStep >= waypoints.size())
+        if (waypoints.size() < 2 || nextPointStep >= waypoints.size())
             return;
         markers.add(map.addMarker(new MarkerOptions()
-                .position(waypoints.get(waypoints.size() - 1)).title("Finish")));
-        if (waypoints.size() - 1 > nextPointStep) {
-            markers.add(map.addMarker(new MarkerOptions()
-                    .position(waypoints.get(nextPointStep)).title("Next")));
-        }
+                .position(waypoints.get(waypoints.size() - 1)).title("Finish")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))));
     }
 
     private LatLng getLocationFromAddress(String strAddress){
@@ -246,6 +254,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             map.addPolyline(new PolylineOptions()
                     .addAll(Arrays.asList(pathPassed.get(size - 2), pathPassed.get(size - 1)))
                     .width(5).color(Color.GREEN).geodesic(true));
+            passedInMeters += DirectionsApiHelper.distance(pathPassed.get(size - 2), pathPassed.get(size - 1));
+            distancePassedTextView.setText(String.format("%.2f", passedInMeters));
         }
         updateMarkers();
     }
