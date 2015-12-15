@@ -80,7 +80,7 @@ public class ProgramManager {
             step = new ProgramStep();
             step.setText(obj.getString("text"));
 
-            if ((distance = obj.getString("distance")) != null){
+            if (!(distance = obj.optString("distance")).matches("")){
                 step.setDistance(Integer.parseInt(distance));
             }
             else{
