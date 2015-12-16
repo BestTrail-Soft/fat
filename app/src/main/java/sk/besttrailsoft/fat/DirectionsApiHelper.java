@@ -20,6 +20,7 @@ import java.util.List;
 /**
  * Created by Adriana on 2.12.2015.
  */
+
 public class DirectionsApiHelper {
 
     private static String urlBase = "http://maps.googleapis.com/maps/api/directions/json";

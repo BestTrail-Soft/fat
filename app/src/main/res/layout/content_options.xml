@@ -42,7 +42,7 @@
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:id="@+id/trainingInstructionsTextView"
         android:singleLine="true"
-        android:text="someText"
+        android:text="None"
         android:layout_below="@+id/trainingInstructionsCheckBox" />
 
     <CheckBox

@@ -97,6 +97,8 @@ public class MovingObjectMock {
             task.cancel();
         if(timer != null)
             timer.cancel();
+        if(locationManager != null)
+            locationManager.removeTestProvider(locationProvider);
     }
 
     private TimerTask createTask(){

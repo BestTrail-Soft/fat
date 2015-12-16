@@ -25,15 +25,20 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import org.json.JSONException;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import sk.besttrailsoft.fat.mock.MovingObjectMock;
+import sk.besttrailsoft.fat.program.Program;
+import sk.besttrailsoft.fat.program.ProgramIndexListener;
+import sk.besttrailsoft.fat.program.ProgramIterator;
+import sk.besttrailsoft.fat.program.ProgramManager;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, ProgramIndexListener {
 
     private GoogleMap map;
     private ArrayList<LatLng> waypoints = new ArrayList<>();
@@ -42,8 +47,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private int nextPointStep = 1;
     private LocationManager locationManager;
     private ArrayList<Marker> markers = new ArrayList<>();
+    private ProgramIterator programIterator = null;
+    private String providerType;
+    private boolean isProgramIteratorSetup = false;
 
     private TextView distancePassedTextView;
+    private TextView instructionValueTextView;
 
     private float passedInMeters = 0;
 
@@ -55,6 +64,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         distancePassedTextView = (TextView) findViewById(R.id.passedDistanceValueText);
+        instructionValueTextView = (TextView) findViewById(R.id.instructionValueText);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         waypointsNames = getIntent().getStringArrayListExtra("places");
@@ -98,6 +108,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             map.addPolyline(polylineOptions);
             //MOCK
             movingMock.setItinerary(way);
+
+            ((TextView) findViewById(R.id.totalDistanceValueText))
+                    .setText(String.format("%.2f", DirectionsApiHelper.distance(way)));
         }
         map.setMyLocationEnabled(true);
         LatLng position = getCurrentLocation();
@@ -112,13 +125,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         movingMock.startTimer(5000);
     }
 
+    @Override
+    public void onIndexChanged() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(programIterator.isFinished())
+                    instructionValueTextView.setText("None");
+                else
+                    instructionValueTextView.setText(programIterator.getCurrentStep().getText());
+            }
+        });
+
+        if(!programIterator.isFinished())
+            programIterator.startStep();
+    }
+
     private LatLng getCurrentLocation() {
         if(pathPassed.size() > 0) {
             return pathPassed.get(pathPassed.size() - 1);
         }
         List<String> providers = locationManager.getAllProviders();
         Location location = null;
-        String bestProvider = null;
         for (String provider : providers) {
             Location l = null;
             try {
@@ -130,7 +158,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (location == null || l.getAccuracy() < location.getAccuracy()) {
                 // Found best last known location: %s", l);
                 location = l;
-                bestProvider = provider;
+                providerType = provider;
             }
         }
         if(location == null) {
@@ -150,7 +178,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 public void onProviderDisabled(String provider) {}
             };
             try {
-                locationManager.requestLocationUpdates(bestProvider, 0, 0, locationListener);
+                locationManager.requestLocationUpdates(providerType, 0, 0, locationListener);
+                setupProgramIterator();
             } catch (SecurityException ex) {
                 Log.w("ReguestLocationUpdates ", ex);
             }
@@ -258,5 +287,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             distancePassedTextView.setText(String.format("%.2f", passedInMeters));
         }
         updateMarkers();
+    }
+
+    private void setupProgramIterator() {
+        String programName = getIntent().getStringExtra("program");
+        if(programName != null && !programName.isEmpty()) {
+            try {
+                programIterator = new ProgramIterator(new ProgramManager(getApplicationContext()).getProgram(programName),
+                        locationManager, providerType);
+                programIterator.addListener(this);
+                onIndexChanged();
+            } catch (IOException ex) {
+                Log.w("MapsActivity", ex.toString());
+            } catch (JSONException ex) {
+                Log.w("MapsActivity", ex.toString());
+            }
+        }
     }
 }

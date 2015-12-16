@@ -41,7 +41,6 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:text="0"
                     android:id="@+id/passedDistanceValueText"
-                    android:layout_below="@+id/passedDistanceValueText"
                      />
             </LinearLayout>
             <LinearLayout
@@ -60,7 +59,24 @@
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:text="none"
                     android:id="@+id/instructionValueText"
-                    android:layout_below="@+id/passedDistanceValueText"
+                    />
+            </LinearLayout>
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Distance between Start and Finish: "
+                    android:id="@+id/totalDistanceTitleText"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:text="NaN"
+                    android:id="@+id/totalDistanceValueText"
                     />
             </LinearLayout>
         </LinearLayout>
