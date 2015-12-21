@@ -7,4 +7,6 @@
     <string name="title_activity_autocomplete_place">AutocompletePlaceActivity</string>
     <string name="title_activity_create_program">Create Program</string>
     <string name="title_activity_show_program">ShowProgramActivity</string>
+    <string name="title_activity_routes">RoutesActivity</string>
+    <string name="title_activity_create_route">CreateRouteActivity</string>
 </resources>

@@ -108,6 +108,16 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="sk.besttrailsoft.fat.program.ProgramsActivity" />
         </activity>
+        <activity
+            android:name=".route.RoutesActivity"
+            android:label="@string/title_activity_routes"
+            android:theme="@style/AppTheme.NoActionBar" >
+        </activity>
+        <activity
+            android:name=".route.CreateRouteActivity"
+            android:label="@string/title_activity_create_route"
+            android:theme="@style/AppTheme.NoActionBar" >
+        </activity>
     </application>
 
 </manifest>

@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import sk.besttrailsoft.fat.program.ProgramsActivity;
+import sk.besttrailsoft.fat.route.RoutesActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,6 +53,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void onProgramsButtonClick(View view){
         Intent intent = new Intent(this, ProgramsActivity.class);
+        startActivity(intent);
+    }
+
+    public void onRoutesButtonClick(View view){
+        Intent intent = new Intent(this, RoutesActivity.class);
         startActivity(intent);
     }
 }
