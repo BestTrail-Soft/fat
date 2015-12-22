@@ -48,6 +48,7 @@ public class CreateRouteActivity extends AppCompatActivity {
         setContentView(R.layout.activity_create_route);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         Intent intent = getIntent();
         oldName = intent.getStringExtra("name");

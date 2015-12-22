@@ -111,10 +111,12 @@
         <activity
             android:name=".route.RoutesActivity"
             android:label="@string/title_activity_routes"
+            android:parentActivityName="MainActivity"
             android:theme="@style/AppTheme.NoActionBar" >
         </activity>
         <activity
             android:name=".route.CreateRouteActivity"
+            android:parentActivityName=".route.RoutesActivity"
             android:label="@string/title_activity_create_route"
             android:theme="@style/AppTheme.NoActionBar" >
         </activity>

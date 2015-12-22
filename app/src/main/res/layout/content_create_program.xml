@@ -57,5 +57,4 @@
         android:id="@+id/saveButton"
         android:onClick="onSaveButtonClick"/>
 
-
 </LinearLayout>

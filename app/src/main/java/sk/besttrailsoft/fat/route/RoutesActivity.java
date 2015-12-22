@@ -40,6 +40,7 @@ public class RoutesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_routes);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         routeManager = new RouteManager(this.getApplicationContext());
 
@@ -55,8 +56,8 @@ public class RoutesActivity extends AppCompatActivity {
                 if (v.getId() == R.id.listView) {
                     AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
                     menu.setHeaderTitle(names.get(info.position));
-                    menu.add(Menu.NONE, DELETE_MENU_ITEM, Menu.NONE, "Delete");
                     menu.add(Menu.NONE, EDIT_MENU_ITEM, Menu.NONE, "Edit");
+                    menu.add(Menu.NONE, DELETE_MENU_ITEM, Menu.NONE, "Delete");
                 }
             }
         });

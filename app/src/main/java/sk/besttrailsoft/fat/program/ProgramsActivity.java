@@ -77,11 +77,6 @@ public class ProgramsActivity extends AppCompatActivity {
 
 
         });
-
-
-
-
-
     }
 
 
@@ -104,8 +99,6 @@ public class ProgramsActivity extends AppCompatActivity {
         Intent intent = new Intent(this, CreateProgramActivity.class);
 
         startActivity(intent);
-
-
     }
 
     private void updateProgramsNames(){
@@ -114,12 +107,5 @@ public class ProgramsActivity extends AppCompatActivity {
 
 
         ((ArrayAdapter)listView.getAdapter()).notifyDataSetChanged();
-
     }
-
-
-
-
-
-
 }
