@@ -25,17 +25,20 @@ import java.util.Arrays;
 import java.util.List;
 
 import sk.besttrailsoft.fat.program.ProgramManager;
+import sk.besttrailsoft.fat.route.RouteManager;
 
 public class OptionsActivity extends AppCompatActivity {
 
     static final int PICK_PLACES_REQUEST = 1;
 
-    private ArrayList<String> places = new ArrayList<String>();
+    private ArrayList<String> places = new ArrayList<>();
     ArrayAdapter<String> placesAdapter;
     private String trainingProgram = null;
 
     private CheckBox trainingInstructionsCheckBox = null;
     private TextView trainingInstructionsTextView = null;
+    private CheckBox defineRouteCheckBox = null;
+    private TextView routeTextView = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +46,8 @@ public class OptionsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_options);
         trainingInstructionsCheckBox = (CheckBox) findViewById(R.id.trainingInstructionsCheckBox);
         trainingInstructionsTextView = (TextView) findViewById(R.id.trainingInstructionsTextView);
+        defineRouteCheckBox = (CheckBox) findViewById(R.id.defineRouteCheckBox);
+        routeTextView = (TextView) findViewById(R.id.definedRoureTextView);
 
         trainingInstructionsCheckBox
                 .setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -55,9 +60,20 @@ public class OptionsActivity extends AppCompatActivity {
                                                 }
                                             }
                 );
-        placesAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, places);
+        placesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, places);
         ListView placesListView = (ListView) findViewById(R.id.placesListView);
         placesListView.setAdapter(placesAdapter);
+        defineRouteCheckBox
+                .setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                                                @Override
+                                                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                                                    if (isChecked)
+                                                        onDefinedRouteChecked();
+                                                    else
+                                                        onDefineRouteUnchecked();
+                                                }
+                                            }
+                );
         registerForContextMenu(placesListView);
     }
 
@@ -81,11 +97,11 @@ public class OptionsActivity extends AppCompatActivity {
 
     public void onTrainingInstructionChecked() {
         final String[] programs = new ProgramManager(getApplicationContext()).getAllProgramsNames();
-        if(programs != null || programs.length > 0) {
+        if(programs != null && programs.length > 0) {
             AlertDialog.Builder builderSingle = new AlertDialog.Builder(OptionsActivity.this);
             builderSingle.setTitle("Choose program");
 
-            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(
+            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
                     OptionsActivity.this,
                     android.R.layout.select_dialog_singlechoice);
             arrayAdapter.addAll(programs);
@@ -153,5 +169,57 @@ public class OptionsActivity extends AppCompatActivity {
         places.remove(info.position);
         placesAdapter.notifyDataSetChanged();
         return true;
+    }
+
+    public void onDefineRouteUnchecked() {
+        routeTextView.setText("Free trail");
+        reloadPlacesList(new ArrayList<String>());
+    }
+
+    public void onDefinedRouteChecked() {
+        final RouteManager routeManager = new RouteManager(getApplicationContext());
+        final String[] routes = routeManager.getAllRoutesNames();
+        if(routes != null && routes.length > 0) {
+            AlertDialog.Builder builderSingle = new AlertDialog.Builder(OptionsActivity.this);
+            builderSingle.setTitle("Choose your Route");
+
+            final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(
+                    OptionsActivity.this,
+                    android.R.layout.select_dialog_singlechoice);
+            arrayAdapter.addAll(routes);
+
+            builderSingle.setNegativeButton(
+                    "cancel",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            defineRouteCheckBox.setChecked(false);
+                            dialog.dismiss();
+                        }
+                    });
+
+            builderSingle.setAdapter(
+                    arrayAdapter,
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            try {
+                                ArrayList<String> places = new ArrayList<>();
+                                places.addAll(routeManager.getRoute(routes[which]).getWaypoints());
+                                reloadPlacesList(places);
+                                routeTextView.setText(routes[which]);
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    });
+            builderSingle.show();
+        }
+    }
+
+    private void reloadPlacesList(ArrayList<String> places) {
+        this.places.clear();
+        this.places.addAll(places);
+        placesAdapter.notifyDataSetChanged();
     }
 }

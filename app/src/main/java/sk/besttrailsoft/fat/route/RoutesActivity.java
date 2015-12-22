@@ -49,19 +49,6 @@ public class RoutesActivity extends AppCompatActivity {
         listView.setAdapter(adapter);
         listView.setEmptyView(findViewById(R.id.emptyElement));
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapter, View v, int position,
-                                    long arg3) {
-                String name = (String) adapter.getItemAtPosition(position);
-                Route route;
-
-                //Intent intent = new Intent(getApplicationContext(), ShowProgramActivity.class);
-                //intent.putExtra("name", name);
-                //startActivity(intent);
-            }
-        });
-
         listView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {

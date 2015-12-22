@@ -8,7 +8,11 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.ContextMenu;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -26,6 +30,7 @@ import sk.besttrailsoft.fat.program.Program;
 public class CreateRouteActivity extends AppCompatActivity {
 
     static final int PICK_PLACES_REQUEST = 1;
+    private final int DELETE_MENU_ITEM = 100;
 
     private ArrayList<String> places = new ArrayList<>();
     private ArrayAdapter<String> placesAdapter;
@@ -34,6 +39,8 @@ public class CreateRouteActivity extends AppCompatActivity {
     EditText routeNameView;
     String oldName;
     boolean oldNameExists = false;
+
+    ListView placesListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,8 +55,18 @@ public class CreateRouteActivity extends AppCompatActivity {
         routeManager = new RouteManager(this.getApplicationContext());
 
         placesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, places);
-        ListView placesListView = (ListView) findViewById(R.id.waypointsListView);
+        placesListView = (ListView) findViewById(R.id.waypointsListView);
         placesListView.setAdapter(placesAdapter);
+        placesListView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+            @Override
+            public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                if (v.getId() == R.id.waypointsListView) {
+                    AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+                    menu.setHeaderTitle(places.get(info.position));
+                    menu.add(Menu.NONE, DELETE_MENU_ITEM, Menu.NONE, "Delete");
+                }
+            }
+        });
         if(oldName != null && !oldName.isEmpty()) {
             try {
                 Route route = routeManager.getRoute(oldName);
@@ -76,6 +93,14 @@ public class CreateRouteActivity extends AppCompatActivity {
             places.addAll(data.getStringArrayListExtra("places"));
             placesAdapter.notifyDataSetChanged();
         }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
+        places.remove(info.position);
+        placesAdapter.notifyDataSetChanged();
+        return true;
     }
 
     public void onSaveButtonClick(View view) {
