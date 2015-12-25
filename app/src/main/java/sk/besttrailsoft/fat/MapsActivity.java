@@ -1,19 +1,23 @@
 package sk.besttrailsoft.fat;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -33,12 +37,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import sk.besttrailsoft.fat.mock.MovingObjectMock;
-import sk.besttrailsoft.fat.program.Program;
 import sk.besttrailsoft.fat.program.ProgramIndexListener;
 import sk.besttrailsoft.fat.program.ProgramIterator;
 import sk.besttrailsoft.fat.program.ProgramManager;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, ProgramIndexListener {
+public class MapsActivity extends FragmentActivity implements LocationListener, OnMapReadyCallback, ProgramIndexListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+    private final String TAG = "FAT-MapsActivity";
 
     private GoogleMap map;
     private ArrayList<LatLng> waypoints = new ArrayList<>();
@@ -49,12 +54,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Marker> markers = new ArrayList<>();
     private ProgramIterator programIterator = null;
     private String providerType;
-    private boolean isProgramIteratorSetup = false;
 
     private TextView distancePassedTextView;
     private TextView instructionValueTextView;
+    private ProgressDialog progressDialog;
 
     private float passedInMeters = 0;
+
+    LocationRequest locationRequest;
+    GoogleApiClient locationClient;
 
     //MOCK
     MovingObjectMock movingMock = null;
@@ -63,34 +71,41 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        //progressDialog = ProgressDialog.show(getApplicationContext(), "Loading", "Please wait...", true);
         distancePassedTextView = (TextView) findViewById(R.id.passedDistanceValueText);
         instructionValueTextView = (TextView) findViewById(R.id.instructionValueText);
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        waypointsNames = getIntent().getStringArrayListExtra("places");
         //MOCK
         movingMock = new MovingObjectMock(locationManager, getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
-        if (waypointsNames == null || waypointsNames.size() < 2) {
-
-            LatLng curLocation = getCurrentLocation();
-            if(waypoints != null && waypoints.size() == 1) {
-                waypoints.add(waypoints.get(0));
-            }
-            if (curLocation != null)
-                waypoints.add(getCurrentLocation());
-        } else {
+        if(isPredefinedRoute()){
             LatLng place = null;
+            waypointsNames = getIntent().getStringArrayListExtra("places");
             for (String point : waypointsNames) {
                 place = getLocationFromAddress(point);
                 if (place != null)
                     waypoints.add(place);
             }
+
+            setupMock(getRoutePointsFromWaypoints());
         }
+
+        locationClient = new GoogleApiClient.Builder(this)
+                .addApi(LocationServices.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
+
+        //progressDialog = ProgressDialog.show(MapsActivity.this, "Loading", "Please wait...", true);
+        locationClient.connect();
+
+        progressDialog.dismiss();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        //progressDialog.dismiss();
     }
 
     /**
@@ -99,30 +114,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
-        if (waypoints == null || waypoints.size() < 1)
-            return;
-        if (waypoints.size() > 1) {
-            List<LatLng> way = getRoutePointsFromWaypoints();
-            PolylineOptions polylineOptions = new PolylineOptions().addAll(way)
-                    .width(5).color(Color.BLUE).geodesic(true);
-            map.addPolyline(polylineOptions);
-            //MOCK
-            movingMock.setItinerary(way);
-
-            ((TextView) findViewById(R.id.totalDistanceValueText))
-                    .setText(String.format("%.2f", DirectionsApiHelper.distance(way)));
-        }
         map.setMyLocationEnabled(true);
-        LatLng position = getCurrentLocation();
-        if (position == null) {
-            setCamera(waypoints.get(0));
-        } else {
-            setCamera(position);
-        }
-        updateMarkers();
-
-        //MOCK
-        movingMock.startTimer(5000);
     }
 
     @Override
@@ -130,7 +122,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(programIterator.isFinished())
+                if (programIterator.isFinished())
                     instructionValueTextView.setText("None");
                 else
                     instructionValueTextView.setText(programIterator.getCurrentStep().getText());
@@ -141,7 +133,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             programIterator.startStep();
     }
 
-    private LatLng getCurrentLocation() {
+    private boolean isPredefinedRoute() {
+        ArrayList<String> route = getIntent().getStringArrayListExtra("places");
+        return route!=null && route.size() >= 2;
+    }
+
+    private LatLng getCurrenttLocation() {
         if(pathPassed.size() > 0) {
             return pathPassed.get(pathPassed.size() - 1);
         }
@@ -151,7 +148,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Location l = null;
             try {
                l = locationManager.getLastKnownLocation(provider);
-            }catch (SecurityException ex){}
+            }catch (SecurityException ex){
+                ex.printStackTrace();
+            }
             if (l == null) {
                 continue;
             }
@@ -178,13 +177,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 public void onProviderDisabled(String provider) {}
             };
             try {
-                locationManager.requestLocationUpdates(providerType, 0, 0, locationListener);
+                //locationManager.requestLocationUpdates(providerType, 0, 0, locationListener);
                 setupProgramIterator();
             } catch (SecurityException ex) {
                 Log.w("ReguestLocationUpdates ", ex);
             }
             return newPoint;
         }
+    }
+
+    private LatLng getCurrentLocation() {
+        LatLng result = null;
+        if(pathStarted())
+            result = pathPassed.get(pathPassed.size()-1);
+
+        return result;
     }
 
     @Override
@@ -283,8 +290,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             map.addPolyline(new PolylineOptions()
                     .addAll(Arrays.asList(pathPassed.get(size - 2), pathPassed.get(size - 1)))
                     .width(5).color(Color.GREEN).geodesic(true));
-            passedInMeters += DirectionsApiHelper.distance(pathPassed.get(size - 2), pathPassed.get(size - 1));
+            float passed = DirectionsApiHelper.distance(pathPassed.get(size - 2), pathPassed.get(size - 1));
+            passedInMeters += passed;
             distancePassedTextView.setText(String.format("%.2f", passedInMeters));
+
+            programIterator.updateDistance(passed);
         }
         updateMarkers();
     }
@@ -293,15 +303,94 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         String programName = getIntent().getStringExtra("program");
         if(programName != null && !programName.isEmpty()) {
             try {
-                programIterator = new ProgramIterator(new ProgramManager(getApplicationContext()).getProgram(programName),
-                        locationManager, providerType);
+                programIterator = new ProgramIterator(new ProgramManager(getApplicationContext()).getProgram(programName));
                 programIterator.addListener(this);
                 onIndexChanged();
-            } catch (IOException ex) {
-                Log.w("MapsActivity", ex.toString());
-            } catch (JSONException ex) {
+            } catch (Exception ex) {
                 Log.w("MapsActivity", ex.toString());
             }
         }
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        //MOCK
+        LocationServices.FusedLocationApi.setMockMode(locationClient, true);
+
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(1000); // Update location every second
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                locationClient, locationRequest, this);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        Log.i(TAG, "GoogleApiClient connection has been suspend");
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if(!pathStarted()) {
+            setupProgramIterator();
+            setupItinerary();
+            //progressDialog.dismiss();
+        }
+        onLocationChangedEvent(location);
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.i(TAG, "GoogleApiClient connection has failed");
+    }
+
+    private boolean pathStarted() {
+        return (pathPassed != null && pathPassed.size() > 0);
+    }
+
+    private void setupItinerary() {
+        waypointsNames = getIntent().getStringArrayListExtra("places");
+
+        if (waypointsNames == null || waypointsNames.size() < 2) {
+
+            LatLng curLocation = getCurrentLocation();
+            if(waypointsNames != null && waypointsNames.size() == 1) {
+                waypoints.add(waypoints.get(0));
+            }
+            if (curLocation != null)
+                waypoints.add(getCurrentLocation());
+        } else {
+            LatLng place = null;
+            for (String point : waypointsNames) {
+                place = getLocationFromAddress(point);
+                if (place != null)
+                    waypoints.add(place);
+            }
+        }
+
+        if (waypoints.size() > 1) {
+            List<LatLng> way = getRoutePointsFromWaypoints();
+            PolylineOptions polylineOptions = new PolylineOptions().addAll(way)
+                    .width(5).color(Color.BLUE).geodesic(true);
+            map.addPolyline(polylineOptions);
+            ((TextView) findViewById(R.id.totalDistanceValueText))
+                    .setText(String.format("%.2f", DirectionsApiHelper.distance(way)));
+
+            //MOCK
+            //setupMock(way);
+        }
+
+        LatLng position = getCurrentLocation();
+        if (position == null) {
+            setCamera(waypoints.get(0));
+        } else {
+            setCamera(position);
+        }
+    }
+
+    private void setupMock(List<LatLng> way) {
+        movingMock.setItinerary(way);
+        movingMock.startTimer(5000);
     }
 }

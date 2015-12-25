@@ -7,6 +7,10 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -16,31 +20,32 @@ import java.util.TimerTask;
  * Created by Adriana on 15.12.2015.
  */
 
-public class ProgramIterator {
+public class ProgramIterator{
     private Program program;
     private int index = 0;
     private boolean started = false;
     private boolean paused = false;
     private boolean finished = true;
     private Timer timer = new Timer();
-    private List<ProgramIndexListener> listeners = new ArrayList<ProgramIndexListener>();
+    private List<ProgramIndexListener> listeners = new ArrayList<>();
 
-    String provider;
-    LocationManager locationManager;
+    private float passedDistance = 0;
+    private boolean locationStep = false;
 
-    public ProgramIterator(Program program, LocationManager locationManager, String provider) {
+    //String provider;
+    //LocationManager locationManager;
+
+    public ProgramIterator(Program program) {
         if(program == null)
             throw new NullPointerException("program cannot be null");
         if(program.getSteps().size() < 1)
             throw new IllegalArgumentException("program cannot be empty");
-        if(provider == null)
-            throw new NullPointerException("provider cannot be null");
-        if(locationManager == null)
-            throw new NullPointerException("locationManager cannot be null");
+        //if(locationClient == null)
+        //    throw new NullPointerException("locationClient cannot be null");
+        //if(locationManager == null)
+        //    throw new NullPointerException("locationManager cannot be null");
 
         this.program = program;
-        this.locationManager = locationManager;
-        this.provider = provider;
         finished = false;
     }
 
@@ -52,6 +57,21 @@ public class ProgramIterator {
         if(program.getSteps().size() - 1 <= index)
             finished = true;
         return finished;
+    }
+
+    public void updateDistance(float distance) {
+        if(locationStep) {
+            passedDistance += distance;
+            if(passedDistance >= program.getSteps().get(index).getDistance()) {
+                if(!finished)
+                    index++;
+                started = false;
+                notifyListeners();
+                locationStep = false;
+            }
+        } else {
+            passedDistance = 0;
+        }
     }
 
     public boolean startStep() {
@@ -86,11 +106,12 @@ public class ProgramIterator {
     }
 
     private void onLocationStep() {
-        try {
-            locationManager.requestLocationUpdates(provider, 60*60*60*1000, program.getSteps().get(index).getDistance(), createLocationListener(), Looper.getMainLooper());
-        } catch (SecurityException ex) {
-            Log.w("ReguestLocationUpdates ", ex);
-        }
+        locationStep = true;
+        //try {
+        //    locationManager.requestLocationUpdates(provider, 60*60*60*1000, program.getSteps().get(index).getDistance(), createLocationListener(), Looper.getMainLooper());
+        //} catch (SecurityException ex) {
+        //    Log.w("ReguestLocationUpdates ", ex);
+        //}
     }
 
     private void onTimeStep() {
@@ -112,28 +133,28 @@ public class ProgramIterator {
         };
     }
 
-    private LocationListener createLocationListener() {
-        return new LocationListener() {
-            public void onLocationChanged(Location location) {
-                if(!finished)
-                    index++;
-                started = false;
-                notifyListeners();
-                try {
-                    locationManager.removeUpdates(this);
-                }catch (SecurityException ex) {
-                    Log.w("ProgramIterator", ex.toString());
-                }
-
-            }
-
-            public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-            public void onProviderEnabled(String provider) {}
-
-            public void onProviderDisabled(String provider) {}
-        };
-    }
+    //private LocationListener createLocationListener() {
+    //    return new LocationListener() {
+    //        public void onLocationChanged(Location location) {
+    //            if(!finished)
+    //                index++;
+    //            started = false;
+    //            notifyListeners();
+    //            try {
+    //                locationManager.removeUpdates(this);
+    //            }catch (SecurityException ex) {
+    //                Log.w("ProgramIterator", ex.toString());
+    //            }
+//
+    //        }
+//
+    //        public void onStatusChanged(String provider, int status, Bundle extras) {}
+//
+    //        public void onProviderEnabled(String provider) {}
+//
+    //        public void onProviderDisabled(String provider) {}
+    //    };
+    //}
 
     private void notifyListeners() {
         for (ProgramIndexListener listener : listeners)
