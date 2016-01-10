@@ -74,6 +74,7 @@ public class ProgramsActivity extends AppCompatActivity {
                 if (v.getId() == R.id.listView) {
                     AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
                     menu.setHeaderTitle(names.get(info.position));
+                    menu.add(Menu.NONE, EDIT_MENU_ITEM, Menu.NONE, "Edit");
                     menu.add(Menu.NONE, DELETE_MENU_ITEM, Menu.NONE, "Delete");
                 }
             }
@@ -88,6 +89,12 @@ public class ProgramsActivity extends AppCompatActivity {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
 
         switch (item.getItemId()){
+            case EDIT_MENU_ITEM:
+                Intent intent = new Intent(this, CreateProgramActivity.class);
+                intent.putExtra("name", names.get(info.position));
+                intent.putExtra("edit",true);
+                startActivity(intent);
+                break;
             case DELETE_MENU_ITEM:
                 Toast.makeText(getApplicationContext(), names.get(info.position) + " deleted", Toast.LENGTH_SHORT).show();
                 programManager.deleteProgram(names.get(info.position));

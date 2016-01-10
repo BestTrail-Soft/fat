@@ -2,6 +2,7 @@ package sk.besttrailsoft.fat.program;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
@@ -21,6 +22,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONException;
+
 import java.io.IOException;
 import java.sql.Array;
 import java.util.ArrayList;
@@ -38,18 +41,23 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
     private Toast toast;
     private boolean toastShown;
     private int idToDelete;
+    private boolean edit;
+    private String oldName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
+        setEditMode();
         setContentView(R.layout.activity_create_program);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         programNameView = (EditText) findViewById(R.id.programNameEditText);
         programStepsView = (ListView) findViewById(R.id.stepsListView);
 
-
-
+        if(edit)
+            getSupportActionBar().setTitle("Edit Program");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         listView = (ListView) findViewById(R.id.stepsListView);
         listView.setAdapter(new DragAndDropStepsAdapter(this, data));
@@ -67,8 +75,10 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
 
         });
 
-
         programManager = new ProgramManager(this.getApplicationContext());
+        if(edit)
+            fillValues();
+
     }
 
     public void onAddStepButtonClick(final View view) {
@@ -147,6 +157,8 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
             return;
 
         }
+        if(edit)
+            programManager.deleteProgram(oldName);
 
         Program program = new Program();
         program.setName(name);
@@ -191,5 +203,27 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
         String displayedText = ((TextView)((LinearLayout)toast.getView()).getChildAt(0)).getText().toString();
         return displayedText;
 
+    }
+
+    private void setEditMode(){
+        Intent intent = getIntent();
+        edit = intent.getBooleanExtra("edit",false);
+
+    }
+
+    private void fillValues(){
+        Intent intent = getIntent();
+        String name = intent.getStringExtra("name");
+        Program p = null;
+        try {
+            p = programManager.getProgram(name);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        programNameView.setText(p.getName());
+        oldName = p.getName();
+        data.addAll(p.getSteps());
     }
 }
