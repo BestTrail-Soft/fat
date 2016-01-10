@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
@@ -43,7 +44,14 @@ public class OptionsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_options);
+        if (getSupportActionBar() == null){
+
+            Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+        }
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         trainingInstructionsCheckBox = (CheckBox) findViewById(R.id.trainingInstructionsCheckBox);
         trainingInstructionsTextView = (TextView) findViewById(R.id.trainingInstructionsTextView);
         defineRouteCheckBox = (CheckBox) findViewById(R.id.defineRouteCheckBox);

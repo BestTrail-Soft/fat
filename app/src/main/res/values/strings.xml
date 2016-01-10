@@ -1,12 +1,12 @@
 <resources>
     <string name="app_name">Fitness Assistant on Trails</string>
     <string name="action_settings">Settings</string>
-    <string name="title_activity_options">OptionsActivity</string>
-    <string name="title_activity_program">ProgramActivity</string>
+    <string name="title_activity_options">Options</string>
+    <string name="title_activity_program">Programs</string>
     <string name="title_activity_maps">Map</string>
-    <string name="title_activity_autocomplete_place">AutocompletePlaceActivity</string>
+    <string name="title_activity_autocomplete_place">Autocomplete Place</string>
     <string name="title_activity_create_program">Create Program</string>
-    <string name="title_activity_show_program">ShowProgramActivity</string>
-    <string name="title_activity_routes">RoutesActivity</string>
-    <string name="title_activity_create_route">CreateRouteActivity</string>
+    <string name="title_activity_show_program">Show Program</string>
+    <string name="title_activity_routes">Routes</string>
+    <string name="title_activity_create_route">Create Route</string>
 </resources>

@@ -99,7 +99,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         //progressDialog = ProgressDialog.show(MapsActivity.this, "Loading", "Please wait...", true);
         locationClient.connect();
 
-        progressDialog.dismiss();
+//        progressDialog.dismiss();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()

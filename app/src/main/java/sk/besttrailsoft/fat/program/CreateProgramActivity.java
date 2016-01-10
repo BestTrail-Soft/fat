@@ -14,6 +14,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -27,12 +28,14 @@ import sk.besttrailsoft.fat.R;
 
 public class CreateProgramActivity extends AppCompatActivity implements IContextMenuable {
 
-    ListView listView;
-    ArrayList<ProgramStep> data = new ArrayList<>();
-    EditText programNameView;
-    ListView programStepsView;
-    EditText newStepText;
-    ProgramManager programManager;
+    private ListView listView;
+    private ArrayList<ProgramStep> data = new ArrayList<>();
+    private EditText programNameView;
+    private ListView programStepsView;
+    private EditText newStepText;
+    private ProgramManager programManager;
+    private Toast toast;
+    private boolean toastShown;
 
 
     @Override
@@ -131,7 +134,8 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
         String name = programNameView.getText().toString();
 
         if (programNameView.getText().toString().matches("")){
-            Toast.makeText(this, "You did not enter a program name", Toast.LENGTH_SHORT).show();
+            toast = Toast.makeText(this, "You did not enter a program name", Toast.LENGTH_SHORT);
+            toast.show();
             return;
 
         }
@@ -177,6 +181,13 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
     @Override
     public void openListViewMenu(View view) {
        openContextMenu(listView);
+
+    }
+
+    public String getToastText() {
+
+        String displayedText = ((TextView)((LinearLayout)toast.getView()).getChildAt(0)).getText().toString();
+        return displayedText;
 
     }
 }

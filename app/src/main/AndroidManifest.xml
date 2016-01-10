@@ -100,15 +100,6 @@
                 android:value="sk.besttrailsoft.fat.program.ProgramsActivity" />
         </activity>
         <activity
-            android:name=".program.ShowProgramActivity"
-            android:label="@string/title_activity_show_program"
-            android:parentActivityName=".program.ProgramsActivity"
-            android:theme="@style/AppTheme.NoActionBar" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="sk.besttrailsoft.fat.program.ProgramsActivity" />
-        </activity>
-        <activity
             android:name=".route.RoutesActivity"
             android:label="@string/title_activity_routes"
             android:parentActivityName="MainActivity"

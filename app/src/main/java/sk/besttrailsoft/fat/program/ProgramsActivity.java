@@ -29,19 +29,22 @@ public class ProgramsActivity extends AppCompatActivity {
     private final int EDIT_MENU_ITEM = 0;
     private final int DELETE_MENU_ITEM = 1;
     private ListView listView;
-    //private String[] data = {"1","2","3","4","5"};
+
     private ArrayList<String> names;
     private ProgramManager programManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_program);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
-        //FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        if (getSupportActionBar() == null){
 
+            Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+        }
+        //getSupportActionBar().setTitle("Options");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         programManager = new ProgramManager(this.getApplicationContext());
 
         names = new ArrayList<>(Arrays.asList(programManager.getAllProgramsNames()));
@@ -99,6 +102,7 @@ public class ProgramsActivity extends AppCompatActivity {
         Intent intent = new Intent(this, CreateProgramActivity.class);
 
         startActivity(intent);
+
     }
 
     private void updateProgramsNames(){
