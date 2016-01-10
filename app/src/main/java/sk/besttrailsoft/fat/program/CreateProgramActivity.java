@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,7 +37,7 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
     private ProgramManager programManager;
     private Toast toast;
     private boolean toastShown;
-
+    private int idToDelete;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,13 +53,14 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         listView = (ListView) findViewById(R.id.stepsListView);
         listView.setAdapter(new DragAndDropStepsAdapter(this, data));
+
         listView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
                 if (v.getId() == R.id.stepsListView) {
-                    AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
 
                     menu.add(Menu.NONE, 1, Menu.NONE, "Delete");
+
                 }
             }
 
@@ -166,20 +168,20 @@ public class CreateProgramActivity extends AppCompatActivity implements IContext
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
 
-        switch (item.getItemId()){
 
-            case 1:
+
                 Toast.makeText(getApplicationContext(), "Step deleted", Toast.LENGTH_SHORT).show();
-                data.remove(info.position);
+                data.remove(idToDelete);
                 ((BaseAdapter)listView.getAdapter()).notifyDataSetChanged();
 
-        }
+
 
         return true;
     }
 
     @Override
     public void openListViewMenu(View view) {
+        idToDelete = view.getId();
        openContextMenu(listView);
 
     }

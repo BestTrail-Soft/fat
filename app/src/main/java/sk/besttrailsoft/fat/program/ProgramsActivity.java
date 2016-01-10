@@ -42,7 +42,7 @@ public class ProgramsActivity extends AppCompatActivity {
             Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
             setSupportActionBar(toolbar);
         }
-        //getSupportActionBar().setTitle("Options");
+
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         programManager = new ProgramManager(this.getApplicationContext());
