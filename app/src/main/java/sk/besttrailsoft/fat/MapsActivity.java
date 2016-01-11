@@ -1,12 +1,12 @@
 package sk.besttrailsoft.fat;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -29,9 +29,6 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import org.json.JSONException;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,6 +37,7 @@ import sk.besttrailsoft.fat.mock.MovingObjectMock;
 import sk.besttrailsoft.fat.program.ProgramIndexListener;
 import sk.besttrailsoft.fat.program.ProgramIterator;
 import sk.besttrailsoft.fat.program.ProgramManager;
+import sk.besttrailsoft.fat.program.ProgramStep;
 
 public class MapsActivity extends FragmentActivity implements LocationListener, OnMapReadyCallback, ProgramIndexListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -50,16 +48,15 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     private ArrayList<LatLng> pathPassed = new ArrayList<>();
     private ArrayList<String> waypointsNames;
     private int nextPointStep = 1;
-    private LocationManager locationManager;
     private ArrayList<Marker> markers = new ArrayList<>();
     private ProgramIterator programIterator = null;
-    private String providerType;
 
     private TextView distancePassedTextView;
     private TextView instructionValueTextView;
     private ProgressDialog progressDialog;
 
     private float passedInMeters = 0;
+    private long firstLocationReceived;
 
     LocationRequest locationRequest;
     GoogleApiClient locationClient;
@@ -71,23 +68,23 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        //progressDialog = ProgressDialog.show(getApplicationContext(), "Loading", "Please wait...", true);
+        progressDialog = ProgressDialog.show(MapsActivity.this, "Loading", "Connecting...", true);
         distancePassedTextView = (TextView) findViewById(R.id.passedDistanceValueText);
         instructionValueTextView = (TextView) findViewById(R.id.instructionValueText);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         //MOCK
-        movingMock = new MovingObjectMock(locationManager, getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
+        movingMock = new MovingObjectMock(getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
+
         if(isPredefinedRoute()){
-            LatLng place = null;
+            LatLng place;
             waypointsNames = getIntent().getStringArrayListExtra("places");
             for (String point : waypointsNames) {
                 place = getLocationFromAddress(point);
                 if (place != null)
                     waypoints.add(place);
             }
-
-            setupMock(getRoutePointsFromWaypoints());
+            //MOCK
+            movingMock.setItinerary(getRoutePointsFromWaypoints());
         }
 
         locationClient = new GoogleApiClient.Builder(this)
@@ -96,16 +93,12 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
                 .addOnConnectionFailedListener(this)
                 .build();
 
-        //progressDialog = ProgressDialog.show(MapsActivity.this, "Loading", "Please wait...", true);
         locationClient.connect();
-
-//        progressDialog.dismiss();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-        //progressDialog.dismiss();
     }
 
     /**
@@ -124,8 +117,12 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
             public void run() {
                 if (programIterator.isFinished())
                     instructionValueTextView.setText("None");
-                else
-                    instructionValueTextView.setText(programIterator.getCurrentStep().getText());
+                else {
+                    ProgramStep prg = programIterator.getCurrentStep();
+                    String length = prg.getDistance() == null ?
+                            prg.getTime() + "min" : prg.getDistance() + "m";
+                    instructionValueTextView.setText(prg.getText() + " " + length);
+                }
             }
         });
 
@@ -138,54 +135,6 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         return route!=null && route.size() >= 2;
     }
 
-    private LatLng getCurrenttLocation() {
-        if(pathPassed.size() > 0) {
-            return pathPassed.get(pathPassed.size() - 1);
-        }
-        List<String> providers = locationManager.getAllProviders();
-        Location location = null;
-        for (String provider : providers) {
-            Location l = null;
-            try {
-               l = locationManager.getLastKnownLocation(provider);
-            }catch (SecurityException ex){
-                ex.printStackTrace();
-            }
-            if (l == null) {
-                continue;
-            }
-            if (location == null || l.getAccuracy() < location.getAccuracy()) {
-                // Found best last known location: %s", l);
-                location = l;
-                providerType = provider;
-            }
-        }
-        if(location == null) {
-            return null;
-        } else {
-            LatLng newPoint = new LatLng(location.getLatitude(), location.getLongitude());
-            pathPassed.add(newPoint);
-            LocationListener locationListener =  new LocationListener() {
-                public void onLocationChanged(Location location) {
-                    onLocationChangedEvent(location);
-                }
-
-                public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-                public void onProviderEnabled(String provider) {}
-
-                public void onProviderDisabled(String provider) {}
-            };
-            try {
-                //locationManager.requestLocationUpdates(providerType, 0, 0, locationListener);
-                setupProgramIterator();
-            } catch (SecurityException ex) {
-                Log.w("ReguestLocationUpdates ", ex);
-            }
-            return newPoint;
-        }
-    }
-
     private LatLng getCurrentLocation() {
         LatLng result = null;
         if(pathStarted())
@@ -196,6 +145,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
 
     @Override
     protected void onDestroy() {
+        //MOCK
         movingMock.stop();
         super.onDestroy();
     }
@@ -217,7 +167,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
                     return false;
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(curPos)
-                        .zoom(15)
+                        .zoom(17)
                         .bearing(0)
                         .tilt(30)
                         .build();
@@ -294,7 +244,16 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
             passedInMeters += passed;
             distancePassedTextView.setText(String.format("%.2f", passedInMeters));
 
-            programIterator.updateDistance(passed);
+            if(programIterator != null)
+                programIterator.updateDistance(passed);
+        }
+
+        if(size > 0) {
+            float distanceToFinish = DirectionsApiHelper.distance(pathPassed.get(size - 1), waypoints.get(waypoints.size()-1));
+            if(distanceToFinish < 1)
+                showAlertDialog("Finish is HERE!");
+            else if(distanceToFinish < 10)
+                showAlertDialog("Finish is closer than 10 meters!");
         }
         updateMarkers();
     }
@@ -316,6 +275,8 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     public void onConnected(Bundle bundle) {
         //MOCK
         LocationServices.FusedLocationApi.setMockMode(locationClient, true);
+        movingMock.setLocationClient(locationClient);
+        movingMock.startTimer(1000);
 
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
@@ -334,8 +295,9 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     public void onLocationChanged(Location location) {
         if(!pathStarted()) {
             setupProgramIterator();
-            setupItinerary();
-            //progressDialog.dismiss();
+            setupItinerary(location);
+            firstLocationReceived = System.currentTimeMillis();
+            progressDialog.dismiss();
         }
         onLocationChangedEvent(location);
     }
@@ -349,17 +311,15 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         return (pathPassed != null && pathPassed.size() > 0);
     }
 
-    private void setupItinerary() {
+    private void setupItinerary(Location location) {
         waypointsNames = getIntent().getStringArrayListExtra("places");
 
         if (waypointsNames == null || waypointsNames.size() < 2) {
 
-            LatLng curLocation = getCurrentLocation();
             if(waypointsNames != null && waypointsNames.size() == 1) {
                 waypoints.add(waypoints.get(0));
             }
-            if (curLocation != null)
-                waypoints.add(getCurrentLocation());
+            waypoints.add(new LatLng(location.getLatitude(), location.getLongitude()));
         } else {
             LatLng place = null;
             for (String point : waypointsNames) {
@@ -375,10 +335,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
                     .width(5).color(Color.BLUE).geodesic(true);
             map.addPolyline(polylineOptions);
             ((TextView) findViewById(R.id.totalDistanceValueText))
-                    .setText(String.format("%.2f", DirectionsApiHelper.distance(way)));
-
-            //MOCK
-            //setupMock(way);
+                    .setText(String.format("%.2f", DirectionsApiHelper.distance(waypoints)/2));
         }
 
         LatLng position = getCurrentLocation();
@@ -389,8 +346,15 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         }
     }
 
-    private void setupMock(List<LatLng> way) {
-        movingMock.setItinerary(way);
-        movingMock.startTimer(5000);
+    private void showAlertDialog(String text) {
+        new AlertDialog.Builder(this)
+                .setTitle("Notice")
+                .setMessage(text)
+                .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 }

@@ -32,18 +32,11 @@ public class ProgramIterator{
     private float passedDistance = 0;
     private boolean locationStep = false;
 
-    //String provider;
-    //LocationManager locationManager;
-
     public ProgramIterator(Program program) {
         if(program == null)
             throw new NullPointerException("program cannot be null");
         if(program.getSteps().size() < 1)
             throw new IllegalArgumentException("program cannot be empty");
-        //if(locationClient == null)
-        //    throw new NullPointerException("locationClient cannot be null");
-        //if(locationManager == null)
-        //    throw new NullPointerException("locationManager cannot be null");
 
         this.program = program;
         finished = false;
@@ -54,7 +47,7 @@ public class ProgramIterator{
     }
 
     public boolean isFinished() {
-        if(program.getSteps().size() - 1 <= index)
+        if(program.getSteps().size() - 1 < index)
             finished = true;
         return finished;
     }
@@ -63,21 +56,21 @@ public class ProgramIterator{
         if(locationStep) {
             passedDistance += distance;
             if(passedDistance >= program.getSteps().get(index).getDistance()) {
-                if(!finished)
-                    index++;
+                passedDistance = 0.0f;
+                index++;
                 started = false;
-                notifyListeners();
                 locationStep = false;
+                notifyListeners();
             }
-        } else {
-            passedDistance = 0;
         }
     }
 
     public boolean startStep() {
         if(finished || started)
             return false;
-        if(index >= program.getSteps().size() - 1) {
+        if(index == program.getSteps().size()) {
+            finished = true;
+        } else if(index > program.getSteps().size()) {
             finished = true;
             return false;
         }
@@ -95,23 +88,12 @@ public class ProgramIterator{
         return program.getSteps().get(index);
     }
 
-    public ProgramStep getNextStep() {
-        if(program.getSteps().size() < index + 2)
-            return null;
-        return program.getSteps().get(index + 1);
-    }
-
     public ArrayList<ProgramStep> getProgramSteps() {
         return program.getSteps();
     }
 
     private void onLocationStep() {
         locationStep = true;
-        //try {
-        //    locationManager.requestLocationUpdates(provider, 60*60*60*1000, program.getSteps().get(index).getDistance(), createLocationListener(), Looper.getMainLooper());
-        //} catch (SecurityException ex) {
-        //    Log.w("ReguestLocationUpdates ", ex);
-        //}
     }
 
     private void onTimeStep() {
@@ -132,29 +114,6 @@ public class ProgramIterator{
             }
         };
     }
-
-    //private LocationListener createLocationListener() {
-    //    return new LocationListener() {
-    //        public void onLocationChanged(Location location) {
-    //            if(!finished)
-    //                index++;
-    //            started = false;
-    //            notifyListeners();
-    //            try {
-    //                locationManager.removeUpdates(this);
-    //            }catch (SecurityException ex) {
-    //                Log.w("ProgramIterator", ex.toString());
-    //            }
-//
-    //        }
-//
-    //        public void onStatusChanged(String provider, int status, Bundle extras) {}
-//
-    //        public void onProviderEnabled(String provider) {}
-//
-    //        public void onProviderDisabled(String provider) {}
-    //    };
-    //}
 
     private void notifyListeners() {
         for (ProgramIndexListener listener : listeners)

@@ -5,6 +5,8 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.util.Log;
 
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.lang.reflect.InvocationTargetException;
@@ -23,11 +25,19 @@ public class MovingObjectMock {
     private static String locationProvider = LocationManager.GPS_PROVIDER;
     private Timer timer;
     private TimerTask task;
-    private LocationManager locationManager;
+    GoogleApiClient locationClient;
+    LatLng firstPosition;
 
-    public MovingObjectMock(LocationManager locationManager, LatLng firstPosition) {
-        this.locationManager = locationManager;
-        setMockLocation(firstPosition, 1.0f);
+    public MovingObjectMock(GoogleApiClient locationClient, LatLng firstPosition) {
+        this.locationClient = locationClient;
+        setMockLocation(firstPosition, 100.0f);
+    }
+
+    public MovingObjectMock(LatLng firstPosition) {
+        if(firstPosition == null)
+            throw new NullPointerException("firstPosition");
+
+        this.firstPosition = firstPosition;
     }
 
     /**
@@ -46,6 +56,13 @@ public class MovingObjectMock {
         return itinerary == null || index >= itinerary.size();
     }
 
+    public void setLocationClient(GoogleApiClient locationClient) {
+        if(locationClient == null)
+            throw new NullPointerException("locationClient");
+
+        this.locationClient = locationClient;
+    }
+
     public LatLng getPosition() {
         if(isFinished())
             return null;
@@ -54,37 +71,24 @@ public class MovingObjectMock {
     }
 
     private void setMockLocation(LatLng position, float accuracy){
-        locationManager.addTestProvider(locationProvider,
-                "requiresNetwork" == "",
-                "requiresSatellite" == "",
-                "requiresCell" == "",
-                "hasMonetaryCost" == "",
-                "supportsAltitude" == "",
-                "supportsSpeed" == "",
-                "supportsBearing" == "",
-                android.location.Criteria.POWER_LOW,
-                android.location.Criteria.ACCURACY_FINE);
-
         Location newLocation = createNewLocation(position, accuracy);
 
-        locationManager.setTestProviderEnabled(locationProvider, true);
         updateLocation(newLocation);
     }
 
     private void updateLocation(Location location) {
-        if(locationManager == null)
-            return;
-        locationManager.setTestProviderStatus(locationProvider, LocationProvider.AVAILABLE,
-                null, location.getTime());
-        locationManager.setTestProviderLocation(locationProvider, location);
+        LocationServices.FusedLocationApi.
+                setMockLocation(locationClient, location);
     }
 
     /**
      * @return can startTimer - it is not the end of the itinerary
      */
     public boolean startTimer(long period) {
-        if(isFinished())
+        if(locationClient == null || isFinished() || firstPosition == null)
             return false;
+
+        setMockLocation(firstPosition, 100.0f);
 
         timer = new Timer();
         task = createTask();
@@ -97,8 +101,6 @@ public class MovingObjectMock {
             task.cancel();
         if(timer != null)
             timer.cancel();
-        if(locationManager != null)
-            locationManager.removeTestProvider(locationProvider);
     }
 
     private TimerTask createTask(){
@@ -131,9 +133,7 @@ public class MovingObjectMock {
             }
         }catch (NoSuchMethodException ex) {
             Log.w("No makeComplete method", ex);
-        }catch(InvocationTargetException ex) {
-            Log.w("Invocation makeComplete", ex);
-        }catch(IllegalAccessException ex) {
+        }catch(InvocationTargetException | IllegalAccessException ex) {
             Log.w("Invocation makeComplete", ex);
         }
 
