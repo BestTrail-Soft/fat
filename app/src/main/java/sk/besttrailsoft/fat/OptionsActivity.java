@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -87,6 +88,12 @@ public class OptionsActivity extends AppCompatActivity {
                                             }
                 );
         registerForContextMenu(placesListView);
+        TextView mockText = (TextView)findViewById(R.id.mockText);
+        SharedPreferences settings = getSharedPreferences("mock_settings", 0);
+
+        if (settings.getBoolean("enabledMock", false)){
+            mockText.setText("(mock enabed)");
+        }
     }
 
     public void onStartButtonToMapClick(View view) {
@@ -161,12 +168,16 @@ public class OptionsActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK && requestCode == PICK_PLACES_REQUEST) {
             places.clear();
+            findViewById(R.id.button).setEnabled(true);
             ArrayList<String> newPlaces = data.getStringArrayListExtra("places");
             if (newPlaces.isEmpty() || newPlaces.get(0) == null || newPlaces.get(0).isEmpty() ){
                 routeTextView.setText("Free Trail");
                 places.addAll(new ArrayList<String>());
             }
             else{
+                if (newPlaces.size() == 1)
+                    findViewById(R.id.button).setEnabled(false);
+
 
                 routeTextView.setText("Defined Route");
                 places.addAll(newPlaces);
@@ -243,6 +254,9 @@ public class OptionsActivity extends AppCompatActivity {
 
     private void reloadPlacesList(ArrayList<String> places) {
         this.places.clear();
+        findViewById(R.id.button).setEnabled(true);
+        if (places.size()==1)
+            findViewById(R.id.button).setEnabled(false);
         this.places.addAll(places);
         placesAdapter.notifyDataSetChanged();
     }

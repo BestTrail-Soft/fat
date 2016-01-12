@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
@@ -15,6 +16,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -62,8 +64,9 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     private ProgressDialog progressDialog;
 
     private float passedInMeters = 0;
-    private long firstLocationReceived;
+    private long firstLocationReceived = 0;
     private boolean showedMessageUnder10m = false;
+    private boolean mockEnabled;
 
     LocationRequest locationRequest;
     GoogleApiClient locationClient;
@@ -76,8 +79,12 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         progressDialog = ProgressDialog.show(MapsActivity.this, "Loading", "Connecting...", true);
+        progressDialog.setCancelable(true);
         distancePassedTextView = (TextView) findViewById(R.id.passedDistanceValueText);
         instructionValueTextView = (TextView) findViewById(R.id.instructionValueText);
+
+        SharedPreferences settings = getSharedPreferences("mock_settings", 0);
+        mockEnabled = settings.getBoolean("enabledMock", false);
 
         //MOCK
         movingMock = new MovingObjectMock(getLocationFromAddress("Gánovská 221/30, Gánovce, Slovensko"));
@@ -106,6 +113,8 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
     }
 
     /**
@@ -153,7 +162,9 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     @Override
     protected void onDestroy() {
         //MOCK
-        movingMock.stop();
+        if (mockEnabled) {
+            movingMock.stop();
+        }
         super.onDestroy();
     }
 
@@ -270,7 +281,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
                     .width(5).color(Color.GREEN).geodesic(true));
             float passed = DirectionsApiHelper.distance(pathPassed.get(size - 2), pathPassed.get(size - 1));
             passedInMeters += passed;
-            distancePassedTextView.setText(String.format("%.2f", passedInMeters));
+            distancePassedTextView.setText(String.format("%.2f", passedInMeters) + " meters");
 
             if(programIterator != null)
                 programIterator.updateDistance(passed);
@@ -278,9 +289,9 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
 
         if(size > 0) {
             float distanceToFinish = DirectionsApiHelper.distance(pathPassed.get(size - 1), waypoints.get(waypoints.size()-1));
-            if(distanceToFinish < 2)
+            if(distanceToFinish < 2 && waypoints.size() > 1)
                 showAlertDialog("Finish is HERE!");
-            else if(distanceToFinish < 10 && !showedMessageUnder10m) {
+            else if(distanceToFinish < 10 && !showedMessageUnder10m && waypoints.size() > 1) {
                 showedMessageUnder10m = true;
                 showAlertDialog("Finish is closer than 10 meters!");
             }
@@ -304,10 +315,11 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     @Override
     public void onConnected(Bundle bundle) {
         //MOCK
-        LocationServices.FusedLocationApi.setMockMode(locationClient, true);
-        movingMock.setLocationClient(locationClient);
-        movingMock.startTimer(1000);
-
+        if (mockEnabled) {
+            LocationServices.FusedLocationApi.setMockMode(locationClient, true);
+            movingMock.setLocationClient(locationClient);
+            movingMock.startTimer(1000);
+        }
         locationRequest = LocationRequest.create();
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         locationRequest.setInterval(1000); // Update location every second
@@ -389,7 +401,10 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
     }
 
     public void generateEvaluationDialog(View view) {
-        float timePassedInMinutes = ((float)(System.currentTimeMillis() - firstLocationReceived))/60000.0f;
+        float timePassedInMinutes = 0;
+        if (firstLocationReceived != 0){
+            timePassedInMinutes = ((float)(System.currentTimeMillis() - firstLocationReceived))/60000.0f;
+        }
         new AlertDialog.Builder(this)
                 .setTitle("Evaluation")
                 .setMessage("Distance passed: " + String.format("%.2f", passedInMeters) + "meters\n"+
