@@ -36,6 +36,11 @@ public class RouteManager {
         return fileHelper.getFilesNamesFromDirectory(DIRECTORY);
     }
 
+    public boolean doPredefinedRoutesExist(){
+
+        return 0 < fileHelper.getFilesNamesFromDirectory(DIRECTORY).length;
+    }
+
     public void createRoute(Route route) throws IOException {
         String name = route.getName();
         String content = "";

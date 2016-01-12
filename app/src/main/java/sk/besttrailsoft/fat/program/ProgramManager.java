@@ -40,6 +40,11 @@ public class ProgramManager {
         return fileHelper.getFilesNamesFromDirectory(DIRECTORY);
     }
 
+    public boolean programsExist(){
+
+        return 0 < getAllProgramsNames().length;
+    }
+
     public void createProgram(Program program) throws IOException {
         String name = program.getName();
         String content = "";

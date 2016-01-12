@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListView;
@@ -40,6 +41,7 @@ public class OptionsActivity extends AppCompatActivity {
     private TextView trainingInstructionsTextView = null;
     private CheckBox defineRouteCheckBox = null;
     private TextView routeTextView = null;
+    private Button defineRouteButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,10 +55,12 @@ public class OptionsActivity extends AppCompatActivity {
         }
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         trainingInstructionsCheckBox = (CheckBox) findViewById(R.id.trainingInstructionsCheckBox);
+        trainingInstructionsCheckBox.setEnabled(new ProgramManager(getApplicationContext()).programsExist());
         trainingInstructionsTextView = (TextView) findViewById(R.id.trainingInstructionsTextView);
         defineRouteCheckBox = (CheckBox) findViewById(R.id.defineRouteCheckBox);
-        routeTextView = (TextView) findViewById(R.id.definedRoureTextView);
-
+        defineRouteCheckBox.setEnabled(new RouteManager(getApplicationContext()).doPredefinedRoutesExist());
+        routeTextView = (TextView) findViewById(R.id.textView2);
+        defineRouteButton = (Button) findViewById(R.id.button2);
         trainingInstructionsCheckBox
                 .setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                                                 @Override
@@ -157,7 +161,17 @@ public class OptionsActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == Activity.RESULT_OK && requestCode == PICK_PLACES_REQUEST) {
             places.clear();
-            places.addAll(data.getStringArrayListExtra("places"));
+            ArrayList<String> newPlaces = data.getStringArrayListExtra("places");
+            if (newPlaces.isEmpty() || newPlaces.get(0) == null || newPlaces.get(0).isEmpty() ){
+                routeTextView.setText("Free Trail");
+                places.addAll(new ArrayList<String>());
+            }
+            else{
+
+                routeTextView.setText("Defined Route");
+                places.addAll(newPlaces);
+            }
+
             placesAdapter.notifyDataSetChanged();
         }
     }
@@ -180,11 +194,13 @@ public class OptionsActivity extends AppCompatActivity {
     }
 
     public void onDefineRouteUnchecked() {
+        defineRouteButton.setEnabled(true);
         routeTextView.setText("Free trail");
         reloadPlacesList(new ArrayList<String>());
     }
 
     public void onDefinedRouteChecked() {
+        defineRouteButton.setEnabled(false);
         final RouteManager routeManager = new RouteManager(getApplicationContext());
         final String[] routes = routeManager.getAllRoutesNames();
         if(routes != null && routes.length > 0) {

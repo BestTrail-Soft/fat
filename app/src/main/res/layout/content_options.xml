@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Set program"
+        android:text="Free Trail"
         android:id="@+id/textView2"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true" />
@@ -56,25 +56,15 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:text="Free trail"
-        android:id="@+id/definedRoureTextView"
-        android:layout_below="@+id/defineRouteCheckBox"
-        android:layout_alignLeft="@+id/trainingInstructionsTextView"
-        android:layout_alignStart="@+id/trainingInstructionsTextView" />
-
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Define route"
         android:id="@+id/button2"
-        android:layout_below="@+id/definedRoureTextView"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:onClick="onAddPlaceClick" />
+        android:onClick="onAddPlaceClick"
+        android:layout_below="@+id/defineRouteCheckBox" />
 
     <ListView
         android:layout_width="wrap_content"
