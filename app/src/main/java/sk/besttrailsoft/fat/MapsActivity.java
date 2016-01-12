@@ -2,7 +2,9 @@ package sk.besttrailsoft.fat;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
@@ -11,6 +13,7 @@ import android.os.StrictMode;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -29,15 +32,18 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import sk.besttrailsoft.fat.mock.MovingObjectMock;
 import sk.besttrailsoft.fat.program.ProgramIndexListener;
 import sk.besttrailsoft.fat.program.ProgramIterator;
 import sk.besttrailsoft.fat.program.ProgramManager;
 import sk.besttrailsoft.fat.program.ProgramStep;
+import sk.besttrailsoft.fat.route.CreateRouteActivity;
 
 public class MapsActivity extends FragmentActivity implements LocationListener, OnMapReadyCallback, ProgramIndexListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
@@ -57,6 +63,7 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
 
     private float passedInMeters = 0;
     private long firstLocationReceived;
+    private boolean showedMessageUnder10m = false;
 
     LocationRequest locationRequest;
     GoogleApiClient locationClient;
@@ -233,6 +240,27 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
         return p1;
     }
 
+    private String getAddressFromPoint(LatLng point){
+
+        Geocoder geocoder;
+        List<Address> addresses;
+        geocoder = new Geocoder(this, Locale.getDefault());
+        StringBuilder address = new StringBuilder();
+
+        try {
+            addresses = geocoder.getFromLocation(point.latitude, point.longitude, 1);
+            for (int i = 0; i<addresses.get(0).getMaxAddressLineIndex(); i++) {
+                address.append(addresses.get(0).getAddressLine(i));
+                if(i != addresses.get(0).getMaxAddressLineIndex()-1)
+                    address.append(" ");
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        return address.toString();
+    }
+
     private void onLocationChangedEvent(Location location) {
         pathPassed.add(new LatLng(location.getLatitude(), location.getLongitude()));
         int size = pathPassed.size();
@@ -250,10 +278,12 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
 
         if(size > 0) {
             float distanceToFinish = DirectionsApiHelper.distance(pathPassed.get(size - 1), waypoints.get(waypoints.size()-1));
-            if(distanceToFinish < 1)
+            if(distanceToFinish < 2)
                 showAlertDialog("Finish is HERE!");
-            else if(distanceToFinish < 10)
+            else if(distanceToFinish < 10 && !showedMessageUnder10m) {
+                showedMessageUnder10m = true;
                 showAlertDialog("Finish is closer than 10 meters!");
+            }
         }
         updateMarkers();
     }
@@ -357,4 +387,74 @@ public class MapsActivity extends FragmentActivity implements LocationListener, 
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
+
+    public void generateEvaluationDialog(View view) {
+        float timePassedInMinutes = ((float)(System.currentTimeMillis() - firstLocationReceived))/60000.0f;
+        new AlertDialog.Builder(this)
+                .setTitle("Evaluation")
+                .setMessage("Distance passed: " + String.format("%.2f", passedInMeters) + "meters\n"+
+                "Time:" + String.format("%.2f", timePassedInMinutes) + "min\n" +
+                "Average speed:" + String.format("%.3f", ((float)passedInMeters/1000.0f)/(timePassedInMinutes/60)) + "km/h\n" )
+                .setNeutralButton("Continue", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                })
+                .setPositiveButton("Save Route", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (!startSaveRouteActivityIntent()) {
+                            new AlertDialog.Builder(getThis())
+                                    .setTitle("Warning")
+                                    .setMessage("Cant create routes right now")
+                                    .setNeutralButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                        }
+                                    })
+                                    .setIcon(android.R.drawable.ic_dialog_alert)
+                                    .show();
+                        }
+                    }
+                })
+                .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        startMainActivityIntent();
+                        finish();
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_info)
+                .show();
+    }
+
+    private void startMainActivityIntent() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+    }
+
+    private boolean startSaveRouteActivityIntent() {
+        Intent intent = new Intent(this, CreateRouteActivity.class);
+        ArrayList<String> places = new ArrayList<>();
+        int index = 0;
+        if(pathPassed.size()>4){
+            int step = pathPassed.size() / 4;
+            places.add(getAddressFromPoint(pathPassed.get(index)));
+            index += step;
+            places.add(getAddressFromPoint(pathPassed.get(index)));
+            index += step;
+            places.add(getAddressFromPoint(pathPassed.get(index)));
+            index = pathPassed.size()-1;
+            places.add(getAddressFromPoint(pathPassed.get(index)));
+        } else {
+            for(LatLng place : pathPassed) {
+                places.add(getAddressFromPoint(place));
+            }
+        }
+        for(String place : places) {
+            if(place == null || place.isEmpty())
+                return false;
+        }
+        intent.putExtra("places", places);
+        startActivity(intent);
+        return true;
+    }
+
+    private Context getThis() { return this; }
 }

@@ -55,9 +55,12 @@ public class CreateRouteActivity extends AppCompatActivity {
         routeNameView = (EditText) findViewById(R.id.routeNameEditText);
         routeManager = new RouteManager(this.getApplicationContext());
 
+        if(intent.getStringArrayListExtra("places") != null && !(intent.getStringArrayListExtra("places").isEmpty()))
+            places = intent.getStringArrayListExtra("places");
         placesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, places);
         placesListView = (ListView) findViewById(R.id.waypointsListView);
         placesListView.setAdapter(placesAdapter);
+
         placesListView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
             @Override
             public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
